@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block body %}
+    {% if session.logged_in %}
+        <a href="{{ url_for('upload') }}">Upload image</a>
+
+
+        <ul class=entries>
+
+            <li><h2>Your images</h2>
+                {% for img in images %}
+                    <a href="{{ url_for('show_image', id=img.get('image_id')) }}">
+                        <img src={{ url_for('static', filename = 'img/%s' % (img.get('image'))) }} height=100>
+                    </a>
+                {% else %}
+                    <li><em>Unbelievable. No images so far</em>
+                {% endfor %}
+
+
+            <li><h2>Images shared with you</h2>
+                {% for img in shared_images %}
+                    <a href="{{ url_for('show_image', id=img.get('image_id')) }}">
+                        <img src={{ url_for('static', filename = 'img/%s' % (img.get('image'))) }} height=100>
+                    </a>
+                {% else %}
+                    <li><em>Unbelievable. No images so far</em>
+
+                {% endfor %}
+
+        </ul>
+
+    {% endif %}
+{% endblock %}

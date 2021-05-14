@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+<label class="label-top">
+    Welcome to Image-2-Image!!
+  </label>
+    <br/>
+    <label class="label-italic">
+    login or create a profile, to start sharing your images!!
+    </label>
+    <image class="img-center" src="{{ url_for('static', filename = 'img/wizard.jpg') }}" width="400" height="500"/>
+{% endblock %}

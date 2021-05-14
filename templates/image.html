@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block body %}
+    {% if session.logged_in %}
+        <a href="{{ url_for('profile') }}">Back</a>
+
+        <ul class=entries>
+            <h2>{{ image[0].get('filename') }}</h2>
+            <img class="img-center" src={{ url_for('static', filename = 'img/%s' % (image[0].get('image'))) }} height=200>
+
+            {% if owner %}
+                <h2>Share Image</h2>
+
+                <form action="{{ url_for('share_image') }}" method=post>
+                    Share with:
+                    <select class="share-select-center" name="userid">
+                        {% for u in usernames %}
+                            <option value="{{ u.id }}">{{ u.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <input name="imageid" type="hidden" value="{{ imageid }}">
+                    <input class="share-input-right" type=submit value=Share>
+                </form>
+
+                <form action="{{ url_for('unshare') }}" method="post">
+                    Unshare:
+                    <select class="share-select-center" name="shareduser">
+                        {% for s in shares %}
+                            <option value="{{ s.id }}">{{ s.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <input name="imageid" type="hidden" value="{{ imageid }}">
+                    <input class="share-input-right" type="submit" value="Unshare">
+
+                </form>
+
+            {% endif %}
+
+            <li><h2>Comments</h2>
+                <form action="{{ url_for('add_comment') }}" method=post class=add-entry>
+                    <dl>
+                        <input name="imageid" type="hidden" value="{{ imageid }}">
+                        <dt>Text:
+                        <dd><textarea name=text rows=5 cols=40></textarea>
+                        <dd><input type=submit value=Comment>
+                    </dl>
+                </form>
+                {% for msg in comments %}
+                    <li><h3>{{ msg.username }}</h3>{{ msg.comment|safe }}
+                        {% else %}
+                    <li><em>Unbelievable. No comments so far</em>
+                {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
