@@ -215,7 +215,8 @@ def share_image():
         to_userid = request.form['userid']
 
         if has_permission(image_id, get_userid()):
-            g.db.execute("insert into share (image_id, to_id, from_id) values ({}, {}, {})".format(image_id, to_userid, get_userid()))
+            g.db.execute("insert into share (image_id, to_id, from_id) values ({}, {}, {})".format(image_id, to_userid,
+                                                                                                   get_userid()))
             g.db.commit()
             flash('Image shared')
             return redirect(url_for('show_image', id=image_id))
@@ -248,7 +249,8 @@ def add_comment():
         userid = get_userid()
         comment = request.form['text']
 
-        g.db.execute("insert into comments (user_id, image_id, comment) values ({}, {}, '{}')".format(userid, image_id, comment))
+        g.db.execute(
+            "insert into comments (user_id, image_id, comment) values ({}, {}, '{}')".format(userid, image_id, comment))
         g.db.commit()
         flash('Added comment')
 
