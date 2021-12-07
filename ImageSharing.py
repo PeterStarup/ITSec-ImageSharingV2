@@ -4,8 +4,6 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, make_response
 from flask_wtf.csrf import CSRFProtect
 import base64
-from flask_httpauth import HTTPTokenAuth
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
 # configuration
 # DATABASE = './tmp/database.db'
@@ -24,22 +22,9 @@ app.jinja_env.autoescape = True
 app.config.update(
     SECRET_KEY="This is a secret!!!",
 )
-token_serializer = Serializer(app.config['SECRET_KEY'], expires_in=3600)
-
-auth = HTTPTokenAuth('Bearer')
 
 csrf = CSRFProtect()
 csrf.init_app(app)
-
-
-@auth.verify_token
-def verify_token(token):
-    try:
-        data = token_serializer.loads(token)
-    except:  # noqa: E722
-        return False
-    if 'username' in data:
-        return data['username']
 
 
 @app.before_request
@@ -142,6 +127,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('user_id')
     flash('You were logged out')
 
     response = make_response(redirect(url_for('index')))
@@ -207,9 +193,7 @@ def blob_to_image(filename, ablob):
     return filename
 
 
-# For some reason a token is not handed to auth user??
 @app.route('/profile', methods=['GET'])
-@auth.login_required
 def profile():
     id = session.get('user_id')
 

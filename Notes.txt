@@ -6,3 +6,15 @@ response.headers['X-XSS-Protection'] = '1; mode=block'
 Dette hjælper os med at beskytte mod xss, da det fortæller brugerens browser til ikke at kører scripts,
 som ikke tilhører hjemmesiden. Dette kunne gøres på en nemmere måde, ved at tilføje dette til vores web server i stedet.
 Dette kunne eksempelvis være apache2 eller nginx!
+
+
+Eksempel på hvordan man kan tjekke session:
+
+    cur = g.db.execute("select id from user where username = 'Peter'")
+    rows = [dict(id=row[0]) for row in cur.fetchall()]
+    user_id = rows[0].get('id')
+
+    if 'user_id' in session and session['user_id'] == user_id:
+        flash("Welcome {}".format(user_id))
+    else:
+        flash("Fuck off")
