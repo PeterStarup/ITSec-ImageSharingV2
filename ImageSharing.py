@@ -1,7 +1,8 @@
 import os
 import sqlite3
 from flask import Flask, request, session, g, redirect, url_for, \
-    abort, render_template, flash
+    abort, render_template, flash, make_response
+from flask_wtf.csrf import CSRFProtect
 import base64
 
 # configuration
@@ -18,6 +19,13 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.jinja_env.autoescape = True
+app.config.update(
+    DEBUG=True,
+    SECRET_KEY="This is a secret!!!",
+)
+
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 
 @app.before_request
@@ -42,7 +50,13 @@ def get_env_dir():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+
+    response = make_response(render_template('index.html'))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/create', methods=['GET', 'POST'])
@@ -69,7 +83,13 @@ def create():
                 return redirect(url_for('login'))
             else:
                 error = 'Username is taken'
-    return render_template('create.html', error=error)
+
+    response = make_response(render_template('create.html', error=error))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -97,14 +117,26 @@ def login():
             return redirect(url_for('profile'))
         else:
             error = 'Invalid username or password'
-    return render_template('login.html', error=error)
+
+    response = make_response(render_template('login.html', error=error))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
     flash('You were logged out')
-    return redirect(url_for('index'))
+
+    response = make_response(redirect(url_for('index')))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/add', methods=['POST'])
@@ -115,7 +147,13 @@ def add_entry():
         "insert into entries (title, text) values ('{}', '{}')".format(request.form['title'], request.form['text']))
     g.db.commit()
     flash('New entry was successfully posted')
-    return redirect(url_for('show_entries'))
+
+    response = make_response(redirect(url_for('show_entries')))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 def allowed_file(filename):
@@ -141,7 +179,12 @@ def upload():
         else:
             flash('filetype not allowed')
 
-    return render_template('upload.html')
+    response = make_response(render_template('upload.html'))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 def blob_to_image(filename, ablob):
@@ -163,7 +206,12 @@ def profile():
             id))
     shared_images = [dict(image_id=row[0], image=blob_to_image(row[2], row[1])) for row in cur.fetchall()]
 
-    return render_template('profile.html', images=images, shared_images=shared_images)
+    response = make_response(render_template('profile.html', images=images, shared_images=shared_images))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/showimage/<id>/', methods=['GET'])
@@ -186,8 +234,13 @@ def show_image(id):
                 id))
         comments = [dict(username=row[0], comment=row[1]) for row in cur.fetchall()]
 
-        return render_template('image.html', imageid=id, image=img, usernames=usr, shares=share, comments=comments,
-                               owner=img[0].get('user_id') == user_id)
+        response = make_response(render_template('image.html', imageid=id, image=img, usernames=usr, shares=share, comments=comments,
+                               owner=img[0].get('user_id') == user_id))
+
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+
+        return response
     else:
         return redirect(url_for('no_way'))
 
@@ -219,7 +272,13 @@ def share_image():
                                                                                                    get_userid()))
             g.db.commit()
             flash('Image shared')
-            return redirect(url_for('show_image', id=image_id))
+
+            response = make_response(redirect(url_for('show_image', id=image_id)))
+
+            response.headers['Content-Security-Policy'] = "default-src 'self'"
+            response.headers['X-XSS-Protection'] = '1; mode=block'
+
+            return response
 
 
 @app.route('/unshare', methods=['POST'])
@@ -231,14 +290,26 @@ def unshare():
         g.db.execute("delete from share where id = {}".format(shared_id))
         g.db.commit()
         flash('Image unshared')
-        return redirect(url_for('show_image', id=image_id))
+
+        response = make_response(redirect(url_for('show_image', id=image_id)))
+
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+
+        return response
     else:
         return redirect(url_for('no_way'))
 
 
 @app.route('/no_way', methods=['GET'])
 def no_way():
-    return render_template('no_way.html')
+
+    response = make_response(render_template('no_way.html'))
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 @app.route('/add_comment', methods=['POST'])
@@ -254,7 +325,12 @@ def add_comment():
         g.db.commit()
         flash('Added comment')
 
-        return redirect(url_for('show_image', id=image_id))
+        response = make_response(redirect(url_for('show_image', id=image_id)))
+
+        response.headers['Content-Security-Policy'] = "default-src 'self'"
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+
+        return response
 
 
 def get_userid():
@@ -263,7 +339,13 @@ def get_userid():
 
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+
+    response = make_response(render_template('404.html'), 404)
+
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+
+    return response
 
 
 if __name__ == '__main__':

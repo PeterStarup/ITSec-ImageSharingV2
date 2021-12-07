@@ -11,6 +11,7 @@
         <dt>Retype password:
       <dd><input type=password name=repassword>
       <dd><input type=submit value=Create>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </dl>
   </form>
 {% endblock %}

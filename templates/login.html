@@ -9,6 +9,7 @@
       <dt>Password:
       <dd><input type=password name=password>
       <dd><input type=submit value=Login>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     </dl>
   </form>
 {% endblock %}

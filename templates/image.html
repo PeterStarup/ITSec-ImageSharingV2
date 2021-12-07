@@ -19,6 +19,7 @@
                     </select>
                     <input name="imageid" type="hidden" value="{{ imageid }}">
                     <input class="share-input-right" type=submit value=Share>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 </form>
 
                 <form action="{{ url_for('unshare') }}" method="post">
@@ -30,6 +31,7 @@
                     </select>
                     <input name="imageid" type="hidden" value="{{ imageid }}">
                     <input class="share-input-right" type="submit" value="Unshare">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 </form>
 
@@ -42,6 +44,7 @@
                         <dt>Text:
                         <dd><textarea name=text rows=5 cols=40></textarea>
                         <dd><input type=submit value=Comment>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     </dl>
                 </form>
                 {% for msg in comments %}
