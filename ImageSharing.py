@@ -11,7 +11,6 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 # DATABASE = './tmp/database.db'
 DATABASE = os.path.dirname(os.path.abspath(__file__)) + '/tmp/database.db'
 DEBUG = False
-SECRET_KEY = 'development key'
 
 UPLOAD_FOLDER = './upload'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
@@ -21,8 +20,8 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.jinja_env.autoescape = True
+# Get a better secret key!
 app.config.update(
-    DEBUG=True,
     SECRET_KEY="This is a secret!!!",
 )
 token_serializer = Serializer(app.config['SECRET_KEY'], expires_in=3600)
@@ -65,7 +64,6 @@ def get_env_dir():
 
 @app.route('/')
 def index():
-
     response = make_response(render_template('index.html'))
 
     response.headers['Content-Security-Policy'] = "default-src 'self'"
