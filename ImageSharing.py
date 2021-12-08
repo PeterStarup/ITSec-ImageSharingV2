@@ -30,6 +30,9 @@ csrf.init_app(app)
 @app.before_request
 def before_request():
     g.db = connect_db()
+    allowed_routes = ['login', 'create']
+    if request.endpoint not in allowed_routes and 'user_id' not in session:
+        return redirect('/login')
 
 
 @app.teardown_request
@@ -127,7 +130,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    session.pop('user_id')
+    session.pop('user_id', None)
     flash('You were logged out')
 
     response = make_response(redirect(url_for('index')))
