@@ -5,15 +5,13 @@ from flask import Flask, request, session, g, redirect, url_for, \
 from flask_wtf.csrf import CSRFProtect
 import base64
 
-# configuration
-# DATABASE = './tmp/database.db'
+# Configuration
 DATABASE = os.path.dirname(os.path.abspath(__file__)) + '/tmp/database.db'
 DEBUG = False
 
 UPLOAD_FOLDER = './upload'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
 
-# create our little application :)
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -27,12 +25,13 @@ csrf = CSRFProtect()
 csrf.init_app(app)
 
 
+# Requests
 @app.before_request
 def before_request():
     g.db = connect_db()
     allowed_routes = ['login', 'create', 'index']
     if request.endpoint not in allowed_routes and 'user_id' not in session:
-        return redirect('/login')
+        return redirect('login')
 
 
 @app.teardown_request
