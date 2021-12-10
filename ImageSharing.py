@@ -30,7 +30,7 @@ csrf.init_app(app)
 @app.before_request
 def before_request():
     g.db = connect_db()
-    allowed_routes = ['login', 'create']
+    allowed_routes = ['login', 'create', 'index']
     if request.endpoint not in allowed_routes and 'user_id' not in session:
         return redirect('/login')
 
