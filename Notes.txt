@@ -18,3 +18,10 @@ Eksempel på hvordan man kan tjekke session:
         flash("Welcome {}".format(user_id))
     else:
         flash("Fuck off")
+
+
+class User(object):
+    def __init__(self, id, username, password):
+        self.id = id
+        self.username = username
+        self.password = password
