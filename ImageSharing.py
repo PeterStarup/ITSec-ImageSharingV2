@@ -72,7 +72,7 @@ def create():
         else:
             username = str(request.form['username'])
             query = "select username from user where username = ?"
-            cur = g.db.execute(query, username)
+            cur = g.db.execute(query, [username])
             u = [dict(password=row[0]) for row in cur.fetchall()]
             if len(u) == 0:
                 g.db.execute("insert into user (username, password, token) values (?, ?, ?)",
@@ -99,7 +99,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        cur = g.db.execute("select password from user where username = ?", username)
+        cur = g.db.execute("select password from user where username = ?", [username])
         pass_db = [dict(password=row[0]) for row in cur.fetchall()]
         if pass_db[0].get('password') is None:
             error = 'Invalid username or password'
@@ -107,7 +107,7 @@ def login():
         p = pass_db[0].get('password')
 
         if p == password:
-            cur = g.db.execute("select id from user where username = ?", username)
+            cur = g.db.execute("select id from user where username = ?", [username])
             rows = [dict(id=row[0]) for row in cur.fetchall()]
             user_id = rows[0].get('id')
 
@@ -199,11 +199,11 @@ def blob_to_image(filename, ablob):
 def profile():
     id = session.get('user_id')
 
-    cur = g.db.execute("select id, image, filename from images where user_id = ?", id)
+    cur = g.db.execute("select id, image, filename from images where user_id = ?", [id])
     images = [dict(image_id=row[0], image=blob_to_image(row[2], row[1])) for row in cur.fetchall()]
 
     cur = g.db.execute(
-        "select images.id, images.image, images.filename from images inner join share on images.id = share.image_id where share.to_id = ?", id)
+        "select images.id, images.image, images.filename from images inner join share on images.id = share.image_id where share.to_id = ?", [id])
     shared_images = [dict(image_id=row[0], image=blob_to_image(row[2], row[1])) for row in cur.fetchall()]
 
     response = make_response(render_template('profile.html', images=images, shared_images=shared_images))
@@ -218,7 +218,7 @@ def profile():
 def show_image(id):
     user_id = get_userid()
     if has_permission(id, user_id):
-        cur = g.db.execute("select image, filename, user_id from images where id = ?", id)
+        cur = g.db.execute("select image, filename, user_id from images where id = ?", [id])
         img = [dict(filename=row[1], image=blob_to_image(row[1], row[0]), user_id=row[2]) for row in cur.fetchall()]
 
         cur = g.db.execute('select id, username from user')
@@ -231,7 +231,7 @@ def show_image(id):
 
         cur = g.db.execute(
             "select user.username, comments.comment from user inner join comments on user.id == comments.user_id where comments.image_id = ?",
-                id)
+                [id])
         comments = [dict(username=row[0], comment=row[1]) for row in cur.fetchall()]
 
         response = make_response(render_template('image.html', imageid=id, image=img, usernames=usr, shares=share, comments=comments,
@@ -246,7 +246,7 @@ def show_image(id):
 
 
 def has_permission(img_id, user_id):
-    cur = g.db.execute("select user_id from images where id = ?", img_id)
+    cur = g.db.execute("select user_id from images where id = ?", [img_id])
     img_user_id = [dict(user_id=row[0]) for row in cur.fetchall()]
 
     if user_id == img_user_id[0].get('user_id'):
@@ -286,7 +286,7 @@ def unshare():
         shared_id = request.form['shareduser']
         image_id = request.form['imageid']
 
-        g.db.execute("delete from share where id = ?", shared_id)
+        g.db.execute("delete from share where id = ?", [shared_id])
         g.db.commit()
         flash('Image unshared')
 
