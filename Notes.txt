@@ -17,13 +17,4 @@ Eksempel på hvordan man kan tjekke session:
     if 'user_id' in session and session['user_id'] == user_id:
         flash("Welcome {}".format(user_id))
     else:
-        flash("Fuck off")
-
-
-Test
-
-class User(object):
-    def __init__(self, id, username, password):
-        self.id = id
-        self.username = username
-        self.password = password
+        flash("Not allowed")

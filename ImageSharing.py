@@ -25,6 +25,47 @@ csrf = CSRFProtect()
 csrf.init_app(app)
 
 
+# Functions
+def connect_db():
+    return sqlite3.connect(app.config['DATABASE'])
+
+
+def get_env_dir():
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def blob_to_image(filename, ablob):
+    folder = get_env_dir() + '/static/img/'
+    with open(folder + filename, 'wb') as output_file:
+        output_file.write(base64.b64decode(ablob))
+    return filename
+
+
+def has_permission(img_id, user_id):
+    cur = g.db.execute("select user_id from images where id = ?", [img_id])
+    img_user_id = [dict(user_id=row[0]) for row in cur.fetchall()]
+
+    if user_id == img_user_id[0].get('user_id'):
+        return True
+
+    cur = g.db.execute(
+        "select id from share where image_id = ? and to_id = ?", [img_id, user_id])
+    share = [dict(id=row[0]) for row in cur.fetchall()]
+
+    if len(share) > 0:
+        return True
+    return False
+
+
+def get_userid():
+    return session.get('user_id')
+
+
 # Requests
 @app.before_request
 def before_request():
@@ -39,14 +80,6 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
-
-
-def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
-
-
-def get_env_dir():
-    return os.path.dirname(os.path.abspath(__file__))
 
 
 @app.route('/')
@@ -157,11 +190,6 @@ def add_entry():
     return response
 
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
@@ -186,13 +214,6 @@ def upload():
     response.headers['X-XSS-Protection'] = '1; mode=block'
 
     return response
-
-
-def blob_to_image(filename, ablob):
-    folder = get_env_dir() + '/static/img/'
-    with open(folder + filename, 'wb') as output_file:
-        output_file.write(base64.b64decode(ablob))
-    return filename
 
 
 @app.route('/profile', methods=['GET'])
@@ -243,22 +264,6 @@ def show_image(id):
         return response
     else:
         return redirect(url_for('no_way'))
-
-
-def has_permission(img_id, user_id):
-    cur = g.db.execute("select user_id from images where id = ?", [img_id])
-    img_user_id = [dict(user_id=row[0]) for row in cur.fetchall()]
-
-    if user_id == img_user_id[0].get('user_id'):
-        return True
-
-    cur = g.db.execute(
-        "select id from share where image_id = ? and to_id = ?", [img_id, user_id])
-    share = [dict(id=row[0]) for row in cur.fetchall()]
-
-    if len(share) > 0:
-        return True
-    return False
 
 
 @app.route('/shareimage', methods=['POST'])
@@ -330,10 +335,6 @@ def add_comment():
         response.headers['X-XSS-Protection'] = '1; mode=block'
 
         return response
-
-
-def get_userid():
-    return session.get('user_id')
 
 
 @app.errorhandler(404)
