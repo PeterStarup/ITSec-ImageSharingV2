@@ -4,6 +4,7 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, make_response
 from flask_wtf.csrf import CSRFProtect
 import base64
+from Models import User
 
 # Configuration
 DATABASE = os.path.dirname(os.path.abspath(__file__)) + '/tmp/database.db'
