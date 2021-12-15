@@ -4,7 +4,6 @@ from flask import Flask, request, session, g, redirect, url_for, \
     abort, render_template, flash, make_response
 from flask_wtf.csrf import CSRFProtect
 import base64
-from Models import User
 
 # Configuration
 DATABASE = os.path.dirname(os.path.abspath(__file__)) + '/tmp/database.db'
@@ -72,11 +71,11 @@ def create():
             error = 'Password is not the same as the retyped'
         else:
             username = str(request.form['username'])
-            query = "select username from user where username = " + "'" + str(username) + "'"
-            cur = g.db.execute(query)
+            query = "select username from user where username = ?"
+            cur = g.db.execute(query, username)
             u = [dict(password=row[0]) for row in cur.fetchall()]
             if len(u) == 0:
-                g.db.execute('insert into user (username, password, token) values (?, ?, ?)',
+                g.db.execute("insert into user (username, password, token) values (?, ?, ?)",
                              [request.form['username'], request.form['password'], ''])
                 g.db.commit()
 
@@ -100,7 +99,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        cur = g.db.execute("select password from user where username = '{}'".format(username))
+        cur = g.db.execute("select password from user where username = ?", username)
         pass_db = [dict(password=row[0]) for row in cur.fetchall()]
         if pass_db[0].get('password') is None:
             error = 'Invalid username or password'
@@ -108,7 +107,7 @@ def login():
         p = pass_db[0].get('password')
 
         if p == password:
-            cur = g.db.execute("select id from user where username = '{}'".format(username))
+            cur = g.db.execute("select id from user where username = ?", username)
             rows = [dict(id=row[0]) for row in cur.fetchall()]
             user_id = rows[0].get('id')
 
@@ -146,7 +145,7 @@ def add_entry():
     if not session.get('logged_in'):
         abort(401)
     g.db.execute(
-        "insert into entries (title, text) values ('{}', '{}')".format(request.form['title'], request.form['text']))
+        "insert into entries (title, text) values (?, ?)", [request.form['title'], request.form['text']])
     g.db.commit()
     flash('New entry was successfully posted')
 
@@ -173,7 +172,7 @@ def upload():
             user_id = get_userid()
 
             g.db.execute('insert into images (image, user_id, filename) values (?, ?, ?)',
-                         (base64.b64encode(file.read()), user_id, filename))
+                         [base64.b64encode(file.read()), user_id, filename])
             g.db.commit()
 
             flash('uploaded image: %s' % filename)
@@ -200,12 +199,11 @@ def blob_to_image(filename, ablob):
 def profile():
     id = session.get('user_id')
 
-    cur = g.db.execute("select id, image, filename from images where user_id = '{}'".format(id))
+    cur = g.db.execute("select id, image, filename from images where user_id = ?", id)
     images = [dict(image_id=row[0], image=blob_to_image(row[2], row[1])) for row in cur.fetchall()]
 
     cur = g.db.execute(
-        "select images.id, images.image, images.filename from images inner join share on images.id = share.image_id where share.to_id = '{}'".format(
-            id))
+        "select images.id, images.image, images.filename from images inner join share on images.id = share.image_id where share.to_id = ?", id)
     shared_images = [dict(image_id=row[0], image=blob_to_image(row[2], row[1])) for row in cur.fetchall()]
 
     response = make_response(render_template('profile.html', images=images, shared_images=shared_images))
@@ -220,20 +218,20 @@ def profile():
 def show_image(id):
     user_id = get_userid()
     if has_permission(id, user_id):
-        cur = g.db.execute("select image, filename, user_id from images where id = {}".format(id))
+        cur = g.db.execute("select image, filename, user_id from images where id = ?", id)
         img = [dict(filename=row[1], image=blob_to_image(row[1], row[0]), user_id=row[2]) for row in cur.fetchall()]
 
         cur = g.db.execute('select id, username from user')
         usr = [dict(id=row[0], username=row[1]) for row in cur.fetchall()]
 
         cur = g.db.execute(
-            "select share.id, user.username from share inner join user on user.id == share.to_id where from_id = {} and share.image_id = {}".format(
-                user_id, id))
+            "select share.id, user.username from share inner join user on user.id == share.to_id where from_id = ? and share.image_id = ?",
+                [user_id, id])
         share = [dict(id=row[0], username=row[1]) for row in cur.fetchall()]
 
         cur = g.db.execute(
-            "select user.username, comments.comment from user inner join comments on user.id == comments.user_id where comments.image_id = {}".format(
-                id))
+            "select user.username, comments.comment from user inner join comments on user.id == comments.user_id where comments.image_id = ?",
+                id)
         comments = [dict(username=row[0], comment=row[1]) for row in cur.fetchall()]
 
         response = make_response(render_template('image.html', imageid=id, image=img, usernames=usr, shares=share, comments=comments,
@@ -248,14 +246,14 @@ def show_image(id):
 
 
 def has_permission(img_id, user_id):
-    cur = g.db.execute("select user_id from images where id = {}".format(img_id))
+    cur = g.db.execute("select user_id from images where id = ?", img_id)
     img_user_id = [dict(user_id=row[0]) for row in cur.fetchall()]
 
     if user_id == img_user_id[0].get('user_id'):
         return True
 
     cur = g.db.execute(
-        "select id from share where image_id = {} and to_id = {}".format(img_id, user_id))
+        "select id from share where image_id = ? and to_id = ?", [img_id, user_id])
     share = [dict(id=row[0]) for row in cur.fetchall()]
 
     if len(share) > 0:
@@ -270,8 +268,7 @@ def share_image():
         to_userid = request.form['userid']
 
         if has_permission(image_id, get_userid()):
-            g.db.execute("insert into share (image_id, to_id, from_id) values ({}, {}, {})".format(image_id, to_userid,
-                                                                                                   get_userid()))
+            g.db.execute("insert into share (image_id, to_id, from_id) values (?, ?, ?)", [image_id, to_userid, get_userid()])
             g.db.commit()
             flash('Image shared')
 
@@ -289,7 +286,7 @@ def unshare():
         shared_id = request.form['shareduser']
         image_id = request.form['imageid']
 
-        g.db.execute("delete from share where id = {}".format(shared_id))
+        g.db.execute("delete from share where id = ?", shared_id)
         g.db.commit()
         flash('Image unshared')
 
@@ -323,7 +320,7 @@ def add_comment():
         comment = request.form['text']
 
         g.db.execute(
-            "insert into comments (user_id, image_id, comment) values ({}, {}, '{}')".format(userid, image_id, comment))
+            "insert into comments (user_id, image_id, comment) values (?, ?, ?)", [userid, image_id, comment])
         g.db.commit()
         flash('Added comment')
 
